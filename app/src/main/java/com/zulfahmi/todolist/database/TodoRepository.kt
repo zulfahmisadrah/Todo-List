@@ -27,19 +27,15 @@ class TodoRepository(application: Application){
         }
     }
 
-    fun update(todo: Todo) {
-        runBlocking {
-            this.launch(Dispatchers.IO){
-                todoDao?.updateTodo(todo)
-            }
+    fun update(todo: Todo) = runBlocking {
+        this.launch(Dispatchers.IO){
+            todoDao?.updateTodo(todo)
         }
     }
 
-    fun delete(todo: Todo) {
-        runBlocking {
-            this.launch(Dispatchers.IO){
-                todoDao?.deleteTodo(todo)
-            }
+    fun delete(todo: Todo) = runBlocking {
+        this.launch(Dispatchers.IO){
+            todoDao?.deleteTodo(todo)
         }
     }
 

@@ -25,6 +25,9 @@ data class Todo(
     @ColumnInfo(name = "due_date")
     var dueDate: String,
 
+    @ColumnInfo(name = "due_time")
+    var dueTime: String,
+
     @ColumnInfo(name = "remind_me")
     var remindMe: Boolean = true
 )

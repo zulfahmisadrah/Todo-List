@@ -20,4 +20,13 @@
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
     <string name="time">Time</string>
+    <string name="no_data_to_display">No data to display</string>
+    <string name="reminder_text">Remind me 1 hour before due time</string>
+
+    <string-array name="option_edit_delete">
+        <item>Details</item>
+        <item>Edit</item>
+        <item>Delete</item>
+    </string-array>
 </resources>
+
