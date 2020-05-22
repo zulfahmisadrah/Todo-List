@@ -13,9 +13,9 @@
         <item name="windowNoTitle">true</item>
     </style>
 
-    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
-
-    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+    <style name="CustomMaterialTheme" parent="Theme.MaterialComponents.Light">
+        <item name="colorPrimary">@color/colorPrimary</item>
+    </style>
 
     <style name="ButtonPrimary">
         <item name="android:paddingStart">16dp</item>
@@ -36,6 +36,7 @@
     </style>
     <style name="InputOutline" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
         <item name="boxStrokeColor">@color/colorPrimary</item>
+        <item name="hintTextColor">@color/colorDarkGray</item>
         <item name="android:strokeColor">#fff</item>
     </style>
 

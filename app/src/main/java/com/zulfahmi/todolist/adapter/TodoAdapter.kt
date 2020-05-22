@@ -8,7 +8,10 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.zulfahmi.todolist.R
 import com.zulfahmi.todolist.model.Todo
+import com.zulfahmi.todolist.util.Commons
 import kotlinx.android.synthetic.main.item_row_todo.view.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 class TodoAdapter(private val context: Context?, private val listener: (Todo, Int) -> Unit): RecyclerView.Adapter<TodoAdapter.TodoViewHolder>(){
     private var todoList = listOf<Todo>()
@@ -32,12 +35,22 @@ class TodoAdapter(private val context: Context?, private val listener: (Todo, In
 
     class TodoViewHolder (itemView: View): RecyclerView.ViewHolder(itemView){
         fun bindItem(todo: Todo, listener: (Todo, Int) -> Unit) {
-            val date = if (todo.dateUpdated != todo.dateCreated) "Updated at ${todo.dateUpdated}" else "Created at ${todo.dateCreated}"
-            val dueDate = "Due ${todo.dueDate}, ${todo.dueTime}"
+            val parsedDateCreated = SimpleDateFormat("dd/MM/yy", Locale.US).parse(todo.dateCreated) as Date
+            val dateCreated = Commons.formatDate(parsedDateCreated, "dd MMM yyyy")
+
+            val parsedDateUpdated = SimpleDateFormat("dd/MM/yy", Locale.US).parse(todo.dateCreated) as Date
+            val dateUpdated = Commons.formatDate(parsedDateUpdated, "dd MMM yyyy")
+
+            val date = if (todo.dateUpdated != todo.dateCreated) "Updated at $dateUpdated" else "Created at $dateCreated"
+
+            val parsedDate = SimpleDateFormat("dd/MM/yy", Locale.US).parse(todo.dueDate) as Date
+            val dueDate = Commons.formatDate(parsedDate, "dd MMM yyyy")
+
+            val dueDateTime = "Due ${dueDate}, ${todo.dueTime}"
 
             itemView.tv_title.text = todo.title
             itemView.tv_note.text = todo.note
-            itemView.tv_due_date.text = dueDate
+            itemView.tv_due_date.text = dueDateTime
             itemView.tv_date_created_updated.text = date
 
             itemView.setOnClickListener{

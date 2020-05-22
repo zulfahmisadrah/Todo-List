@@ -48,6 +48,10 @@ object Commons {
             .show()
     }
 
+    fun formatDate(date: Date, format: String): String{
+        return date.toString(format)
+    }
+
     fun Date.toString(format: String, locale: Locale = Locale.getDefault()): String {
         val formatter = SimpleDateFormat(format, locale)
         return formatter.format(this)

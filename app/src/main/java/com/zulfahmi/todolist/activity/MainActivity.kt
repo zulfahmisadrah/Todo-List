@@ -78,7 +78,7 @@ class MainActivity : AppCompatActivity() {
                 todoList.addAll(it)
                 setEmptyTextVisibility(false)
             }
-
+            Log.d("cek", todoList.toString())
             todoAdapter.setTodoList(it)
         })
 
@@ -112,7 +112,7 @@ class MainActivity : AppCompatActivity() {
             val time = view.input_time.text.toString().trim()
             val note = view.input_note.text.toString()
 
-            val remindMe = true
+            val remindMe = view.input_remind_me.isChecked
 
             if (title == "" || date == "" || time == "") {
                 AlertDialog.Builder(this).setMessage(failAlertMessage).setCancelable(false)
@@ -121,9 +121,10 @@ class MainActivity : AppCompatActivity() {
                     }.create().show()
             } else {
                 val parsedDate = SimpleDateFormat("dd/MM/yy", Locale.US).parse(date) as Date
-                val dueDate = parsedDate.toString("dd MMM yyyy")
+                val dueDate = Commons.formatDate(parsedDate, "dd/MM/yy")
 
-                val dateCreated = Commons.getCurrentDateTime().toString("dd MMM yyyy")
+                val currentDate = Commons.getCurrentDateTime()
+                val dateCreated =Commons.formatDate(currentDate, "dd/MM/yy HH:mm:ss")
 
                 val todo = Todo(
                     title = title,
@@ -156,6 +157,7 @@ class MainActivity : AppCompatActivity() {
         view.input_note.setText(todo.note)
         view.input_due_date.setText(todo.dueDate)
         view.input_time.setText(todo.dueTime)
+        view.input_remind_me.isChecked = todo.remindMe
 
         val dialogTitle = "Edit data"
         val toastMessage = "Data has been updated successfully"
@@ -168,7 +170,7 @@ class MainActivity : AppCompatActivity() {
             val note = view.input_note.text.toString()
 
             val dateCreated = todo.dateCreated
-            val remindMe = true
+            val remindMe = view.input_remind_me.isChecked
 
             if (title == "" || date == "" || time == "") {
                 AlertDialog.Builder(this).setMessage(failAlertMessage).setCancelable(false)
@@ -177,9 +179,10 @@ class MainActivity : AppCompatActivity() {
                     }.create().show()
             } else {
                 val parsedDate = SimpleDateFormat("dd/MM/yy", Locale.US).parse(date) as Date
-                val dueDate = parsedDate.toString("dd MMM yyyy")
+                val dueDate = Commons.formatDate(parsedDate, "dd/MM/yy")
 
-                val dateUpdated = Commons.getCurrentDateTime().toString("dd MMM yyyy")
+                val currentDate = Commons.getCurrentDateTime()
+                val dateUpdated =Commons.formatDate(currentDate, "dd/MM/yy HH:mm:ss")
 
                 todo.title = title
                 todo.note = note
@@ -211,7 +214,9 @@ class MainActivity : AppCompatActivity() {
         val note = "Note: ${todo.note}"
         val dateCreated = "Date created: ${todo.dateCreated}"
         val dateUpdated = "Date updated: ${todo.dateUpdated}"
-        val remindMe = "Reminder Active: ${todo.remindMe}"
+
+        val strReminder = if(todo.remindMe) "Enabled" else "Disabled"
+        val remindMe = "Reminder: $strReminder"
 
         val strMessage = "$title\n$dueDate\n$note\n\n$dateCreated\n$dateUpdated\n$remindMe"
 
@@ -219,11 +224,6 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("OK") { dialogInterface, _ ->
                 dialogInterface.cancel()
             }.create().show()
-    }
-
-    fun Date.toString(format: String, locale: Locale = Locale.getDefault()): String {
-        val formatter = SimpleDateFormat(format, locale)
-        return formatter.format(this)
     }
 
     private fun setEmptyTextVisibility(state: Boolean) {
