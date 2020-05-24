@@ -36,8 +36,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var todoAdapter: TodoAdapter
     private lateinit var alarmReceiver: AlarmReceiver
 
-    private val todoList = ArrayList<Todo>()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -78,22 +76,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun observeData(){
         todoViewModel.getTodos()?.observe(this, Observer {
-            setProgressbarVisibility(false)
-
-            if(it.isEmpty()) setEmptyTextVisibility(true)
-            else {
-                setEmptyTextVisibility(false)
-            }
             todoAdapter.setTodoList(it)
+            setProgressbarVisibility(false)
         })
-
     }
 
     private fun refreshData(){
         setProgressbarVisibility(true)
         observeData()
         swipe_refresh_layout.isRefreshing = false
-        setProgressbarVisibility(false)
     }
 
     private fun showInsertDialog(){
@@ -144,7 +135,7 @@ class MainActivity : AppCompatActivity() {
                 todoViewModel.insertTodo(todo)
 
                 if (remindMe) {
-                    alarmReceiver.setReminderAlarm(this, dueDate, time, title,"Your task is due in 1 hour")
+                    alarmReceiver.setReminderAlarm(this, dueDate, time,"$title is due in 1 hour")
                 }
                 Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show()
             }
@@ -205,7 +196,7 @@ class MainActivity : AppCompatActivity() {
                 todoViewModel.updateTodo(todo)
 
                 if (remindMe && prevDueTime!=time) {
-                    alarmReceiver.setReminderAlarm(this, dueDate, time, title,"Your task is due in 1 hour")
+                    alarmReceiver.setReminderAlarm(this, dueDate, time,"$title is due in 1 hour")
                 }
 
                 Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show()
@@ -239,11 +230,6 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("OK") { dialogInterface, _ ->
                 dialogInterface.cancel()
             }.create().show()
-    }
-
-    private fun setEmptyTextVisibility(state: Boolean) {
-        if (state) tv_empty.visibility = View.VISIBLE
-        else tv_empty.visibility = View.GONE
     }
 
     private fun setProgressbarVisibility(state: Boolean) {

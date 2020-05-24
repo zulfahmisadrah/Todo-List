@@ -9,9 +9,6 @@ import android.content.Context
 import android.content.Intent
 import android.media.RingtoneManager
 import android.os.Build
-import android.provider.Settings.System.DATE_FORMAT
-import android.util.Log
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.zulfahmi.todolist.R
@@ -22,20 +19,19 @@ import java.util.*
 class AlarmReceiver : BroadcastReceiver(){
 
     companion object{
-        const val EXTRA_TITLE = "title"
         const val EXTRA_MESSAGE = "message"
         private const val ID_REMINDER = 100
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         val message = intent.getStringExtra(EXTRA_MESSAGE) as String
-        val title = intent.getStringExtra(EXTRA_TITLE) as String
+        val title = "Task Reminder"
         val notifId =  ID_REMINDER
 
         showAlarmNotification(context, title, message, notifId)
     }
 
-    fun setReminderAlarm(context: Context, date: String, time: String, title: String, message: String) {
+    fun setReminderAlarm(context: Context, date: String, time: String, message: String) {
         if (isDateInvalid(date, "dd/MM/yy") || isDateInvalid(time, "HH:mm")) return
 
         val parsedDate = Commons.convertStringToDate("dd/MM/yy",date)
@@ -44,7 +40,6 @@ class AlarmReceiver : BroadcastReceiver(){
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(context, AlarmReceiver::class.java)
         intent.putExtra(EXTRA_MESSAGE, message)
-        intent.putExtra(EXTRA_TITLE, title)
 
         val dateArray = reminderDate.split("/").toTypedArray()
         val timeArray = time.split(":").toTypedArray()
