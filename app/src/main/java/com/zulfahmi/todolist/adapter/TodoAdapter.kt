@@ -81,14 +81,12 @@ class TodoAdapter(private val listener: (Todo, Int) -> Unit): RecyclerView.Adapt
             }
             VIEW_TYPE_TODO -> {
                 val todoHolder = holder as TodoViewHolder
-                val sortedList = todoFilteredList.sortedBy {
+                val sortedList = todoFilteredList.sortedWith(
                     if(MainActivity.isSortByDateCreated)
-                        it.dateCreated
+                        compareBy({it.dateCreated}, {it.dateUpdated})
                     else{
-                        it.dueDate
-                        it.dueTime
-                    }
-                }
+                        compareBy({it.dueDate}, {it.dueTime})
+                    })
                 todoHolder.bindItem(sortedList[position], listener)
             }
         }
