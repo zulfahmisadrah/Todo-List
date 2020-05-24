@@ -1,20 +1,23 @@
 package com.zulfahmi.todolist.activity
 
 import android.app.AlertDialog
+import android.app.SearchManager
+import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
+import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.zulfahmi.todolist.R
 import com.zulfahmi.todolist.adapter.TodoAdapter
 import com.zulfahmi.todolist.model.Todo
+import com.zulfahmi.todolist.util.AlarmReceiver
 import com.zulfahmi.todolist.util.Commons
 import com.zulfahmi.todolist.util.CustomConfirmDialog
 import com.zulfahmi.todolist.util.FormDialog
@@ -22,15 +25,18 @@ import com.zulfahmi.todolist.viewmodel.TodoViewModel
 
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_todo.view.*
-import java.text.SimpleDateFormat
-import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
+    companion object{
+        var isSortByDateCreated = true
+    }
+
     private lateinit var todoViewModel: TodoViewModel
     private lateinit var todoAdapter: TodoAdapter
+    private lateinit var alarmReceiver: AlarmReceiver
 
-    private val todoList: ArrayList<Todo> = ArrayList<Todo>()
+    private val todoList = ArrayList<Todo>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,7 +45,7 @@ class MainActivity : AppCompatActivity() {
         val layoutManager = LinearLayoutManager(this)
         recyclerview.layoutManager = layoutManager
 
-        todoAdapter = TodoAdapter(this){ todo, _ ->
+        todoAdapter = TodoAdapter(){ todo, _ ->
             val options = resources.getStringArray(R.array.option_edit_delete)
             Commons.showSelector(this, "Choose action", options) { _, i ->
                 when (i) {
@@ -61,6 +67,8 @@ class MainActivity : AppCompatActivity() {
         fab.setOnClickListener {
             showInsertDialog()
         }
+
+        alarmReceiver = AlarmReceiver()
     }
 
     override fun onResume() {
@@ -68,25 +76,22 @@ class MainActivity : AppCompatActivity() {
         observeData()
     }
 
-    private fun observeData(sortby: String = "dateCreated", keyword: String? = ""){
+    private fun observeData(){
         todoViewModel.getTodos()?.observe(this, Observer {
-            todoList.clear()
             setProgressbarVisibility(false)
 
             if(it.isEmpty()) setEmptyTextVisibility(true)
             else {
-                todoList.addAll(it)
                 setEmptyTextVisibility(false)
             }
-            Log.d("cek", todoList.toString())
             todoAdapter.setTodoList(it)
         })
 
     }
 
-    private fun refreshData(sortby: String = "dateCreated", keyword: String? = ""){
+    private fun refreshData(){
         setProgressbarVisibility(true)
-        observeData(sortby, keyword)
+        observeData()
         swipe_refresh_layout.isRefreshing = false
         setProgressbarVisibility(false)
     }
@@ -120,7 +125,7 @@ class MainActivity : AppCompatActivity() {
                         dialogInterface.cancel()
                     }.create().show()
             } else {
-                val parsedDate = SimpleDateFormat("dd/MM/yy", Locale.US).parse(date) as Date
+                val parsedDate = Commons.convertStringToDate("dd/MM/yy",date)
                 val dueDate = Commons.formatDate(parsedDate, "dd/MM/yy")
 
                 val currentDate = Commons.getCurrentDateTime()
@@ -137,6 +142,10 @@ class MainActivity : AppCompatActivity() {
                 )
 
                 todoViewModel.insertTodo(todo)
+
+                if (remindMe) {
+                    alarmReceiver.setReminderAlarm(this, dueDate, time, title,"Your task is due in 1 hour")
+                }
                 Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show()
             }
         }.show()
@@ -171,6 +180,7 @@ class MainActivity : AppCompatActivity() {
 
             val dateCreated = todo.dateCreated
             val remindMe = view.input_remind_me.isChecked
+            val prevDueTime = todo.dueTime
 
             if (title == "" || date == "" || time == "") {
                 AlertDialog.Builder(this).setMessage(failAlertMessage).setCancelable(false)
@@ -178,7 +188,7 @@ class MainActivity : AppCompatActivity() {
                         dialogInterface.cancel()
                     }.create().show()
             } else {
-                val parsedDate = SimpleDateFormat("dd/MM/yy", Locale.US).parse(date) as Date
+                val parsedDate = Commons.convertStringToDate("dd/MM/yy",date)
                 val dueDate = Commons.formatDate(parsedDate, "dd/MM/yy")
 
                 val currentDate = Commons.getCurrentDateTime()
@@ -193,6 +203,11 @@ class MainActivity : AppCompatActivity() {
                 todo.remindMe = remindMe
 
                 todoViewModel.updateTodo(todo)
+
+                if (remindMe && prevDueTime!=time) {
+                    alarmReceiver.setReminderAlarm(this, dueDate, time, title,"Your task is due in 1 hour")
+                }
+
                 Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show()
             }
         }.show()
@@ -237,17 +252,40 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.menu_main, menu)
-        return true
+        val searchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
+        val searchView = (menu.findItem(R.id.menu_search_toolbar)).actionView as SearchView
+        searchView.setSearchableInfo(searchManager.getSearchableInfo(componentName))
+        searchView.queryHint = "Search tasks"
+        searchView.setOnQueryTextListener(object: SearchView.OnQueryTextListener{
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                searchView.clearFocus()
+                todoAdapter.filter.filter(query)
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                todoAdapter.filter.filter(newText)
+                return false
+            }
+        })
+
+        return super.onCreateOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         return when (item.itemId) {
-            R.id.action_settings -> true
+            R.id.action_sort -> true
+            R.id.action_sort_date_created -> {
+                isSortByDateCreated = true
+                refreshData()
+                true
+            }
+            R.id.action_sort_due_date -> {
+                isSortByDateCreated = false
+                refreshData()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }

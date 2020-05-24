@@ -48,6 +48,10 @@ object Commons {
             .show()
     }
 
+    fun convertStringToDate(strPattern: String, strDate: String): Date {
+        return SimpleDateFormat(strPattern, Locale.US).parse(strDate) as Date
+    }
+
     fun formatDate(date: Date, format: String): String{
         return date.toString(format)
     }

@@ -1,35 +1,96 @@
 package com.zulfahmi.todolist.adapter
 
-import android.content.Context
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Filter
+import android.widget.Filterable
 import androidx.recyclerview.widget.RecyclerView
 import com.zulfahmi.todolist.R
+import com.zulfahmi.todolist.activity.MainActivity
 import com.zulfahmi.todolist.model.Todo
 import com.zulfahmi.todolist.util.Commons
+import kotlinx.android.synthetic.main.item_empty.view.*
 import kotlinx.android.synthetic.main.item_row_todo.view.*
 import java.text.SimpleDateFormat
 import java.util.*
 
-class TodoAdapter(private val context: Context?, private val listener: (Todo, Int) -> Unit): RecyclerView.Adapter<TodoAdapter.TodoViewHolder>(){
+class TodoAdapter(private val listener: (Todo, Int) -> Unit): RecyclerView.Adapter<RecyclerView.ViewHolder>(), Filterable{
+    private val VIEW_TYPE_EMPTY = 0
+    private val VIEW_TYPE_TODO = 1
+
     private var todoList = listOf<Todo>()
+    private var todoFilteredList = listOf<Todo>()
 
     fun setTodoList(todoList: List<Todo>) {
         this.todoList = todoList
+        todoFilteredList = todoList
         notifyDataSetChanged()
-        Log.d("cek", todoList.toString())
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TodoViewHolder =
-        TodoViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_row_todo, parent, false))
+    override fun getFilter(): Filter {
+        return object : Filter() {
+            override fun performFiltering(constraint: CharSequence?): FilterResults {
+                val keywords = constraint.toString()
+                if (keywords.isEmpty())
+                    todoFilteredList = todoList
+                else{
+                    val filteredList = ArrayList<Todo>()
+                    for (todo in todoList) {
+                        if (todo.toString().toLowerCase(Locale.ROOT).contains(keywords.toLowerCase(Locale.ROOT)))
+                            filteredList.add(todo)
+                    }
+                    todoFilteredList = filteredList
+                }
 
-    override fun getItemCount(): Int = todoList.size
+                val filterResults = FilterResults()
+                filterResults.values = todoFilteredList
+                return  filterResults
+            }
 
-    override fun onBindViewHolder(holder: TodoViewHolder, position: Int) {
-        if (context != null) {
-            holder.bindItem(todoList[position], listener)
+            @Suppress("UNCHECKED_CAST")
+            override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                todoFilteredList = results?.values as List<Todo>
+                notifyDataSetChanged()
+            }
+        }
+    }
+
+    override fun getItemViewType(position: Int): Int {
+        return if (todoFilteredList.isEmpty())
+            VIEW_TYPE_EMPTY
+        else
+            VIEW_TYPE_TODO
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder{
+        return when (viewType) {
+            VIEW_TYPE_TODO -> TodoViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_row_todo, parent, false))
+            VIEW_TYPE_EMPTY -> EmptyViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_empty, parent, false))
+            else -> throw throw IllegalArgumentException("Undefined view type")
+        }
+    }
+
+    override fun getItemCount(): Int = if (todoFilteredList.isEmpty()) 1 else todoFilteredList.size
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (holder.itemViewType) {
+            VIEW_TYPE_EMPTY -> {
+                val emptyHolder = holder as EmptyViewHolder
+                emptyHolder.bindItem()
+            }
+            VIEW_TYPE_TODO -> {
+                val todoHolder = holder as TodoViewHolder
+                val sortedList = todoFilteredList.sortedBy {
+                    if(MainActivity.isSortByDateCreated)
+                        it.dateCreated
+                    else{
+                        it.dueDate
+                        it.dueTime
+                    }
+                }
+                todoHolder.bindItem(sortedList[position], listener)
+            }
         }
     }
 
@@ -56,7 +117,14 @@ class TodoAdapter(private val context: Context?, private val listener: (Todo, In
             itemView.setOnClickListener{
                 listener(todo, layoutPosition)
             }
+        }
+    }
 
+    class EmptyViewHolder (itemView: View): RecyclerView.ViewHolder(itemView){
+        fun bindItem(){
+            itemView.tv_empty.text = "No data found"
         }
     }
 }
+
+
