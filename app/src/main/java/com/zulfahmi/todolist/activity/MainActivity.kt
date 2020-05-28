@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.app.SearchManager
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
@@ -11,6 +12,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.widget.SearchView
+import androidx.core.view.isVisible
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -43,9 +45,9 @@ class MainActivity : AppCompatActivity() {
         val layoutManager = LinearLayoutManager(this)
         recyclerview.layoutManager = layoutManager
 
-        todoAdapter = TodoAdapter(){ todo, _ ->
-            val options = resources.getStringArray(R.array.option_edit_delete)
-            Commons.showSelector(this, "Choose action", options) { _, i ->
+        todoAdapter = TodoAdapter(this){ todo, _ ->
+            val options = resources.getStringArray(R.array.options_todo)
+            Commons.showSelector(this, "Select action", options) { _, i ->
                 when (i) {
                     0 -> showDetailsDialog(todo)
                     1 -> showEditDialog(todo)
@@ -89,6 +91,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showInsertDialog(){
         val view = LayoutInflater.from(this).inflate(R.layout.fragment_todo, null)
+        var reminderTimeCategory = 0
 
         view.input_due_date.setOnClickListener {
             Commons.showDatePickerDialog(this, view.input_due_date)
@@ -97,6 +100,21 @@ class MainActivity : AppCompatActivity() {
         view.input_time.setOnClickListener {
             Commons.showTimePickerDialog(this, view.input_time)
         }
+
+        view.input_remind_time.setOnClickListener {
+            val options = resources.getStringArray(R.array.options_reminder)
+            Commons.showSelector(this, "Select reminder time", options) { _, i ->
+                view.input_remind_time.setText(options[i])
+                reminderTimeCategory = i
+            }
+        }
+
+        view.input_remind_me.setOnClickListener {
+            view.input_remind_time.visibility = if (view.input_remind_me.isChecked) View.VISIBLE else View.GONE
+        }
+
+        if (view.input_remind_me.isChecked)
+            view.input_remind_time.visibility = View.VISIBLE
 
         val dialogTitle = "Add data"
         val toastMessage = "Data has been added successfully"
@@ -129,14 +147,15 @@ class MainActivity : AppCompatActivity() {
                     dateUpdated = dateCreated,
                     dueDate = dueDate,
                     dueTime = time,
-                    remindMe = remindMe
+                    remindMe = remindMe,
+                    remindTime = reminderTimeCategory
                 )
 
                 todoViewModel.insertTodo(todo)
 
-                if (remindMe) {
-                    alarmReceiver.setReminderAlarm(this, dueDate, time,"$title is due in 1 hour")
-                }
+                if (remindMe)
+                    setReminder(reminderTimeCategory, title, dueDate, time)
+
                 Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show()
             }
         }.show()
@@ -144,6 +163,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showEditDialog(todo: Todo) {
         val view = LayoutInflater.from(this).inflate(R.layout.fragment_todo, null)
+        var reminderTimeCategory = todo.remindTime
 
         view.input_due_date.setOnClickListener {
             Commons.showDatePickerDialog(this, view.input_due_date)
@@ -153,11 +173,29 @@ class MainActivity : AppCompatActivity() {
             Commons.showTimePickerDialog(this, view.input_time)
         }
 
+        view.input_remind_time.setOnClickListener {
+            val options = resources.getStringArray(R.array.options_reminder)
+            Commons.showSelector(this, "Select reminder time", options) { _, i ->
+                view.input_remind_time.setText(options[i])
+                reminderTimeCategory = i
+            }
+        }
+
+        view.input_remind_me.setOnClickListener {
+            view.input_remind_time.visibility = if (view.input_remind_me.isChecked) View.VISIBLE else View.GONE
+        }
+
+        if (view.input_remind_me.isChecked)
+            view.input_remind_time.visibility = View.VISIBLE
+
         view.input_title.setText(todo.title)
         view.input_note.setText(todo.note)
         view.input_due_date.setText(todo.dueDate)
         view.input_time.setText(todo.dueTime)
         view.input_remind_me.isChecked = todo.remindMe
+
+        val reminderTime = Commons.getReminderTimeFromCategory(reminderTimeCategory)
+        view.input_remind_time.setText(reminderTime)
 
         val dialogTitle = "Edit data"
         val toastMessage = "Data has been updated successfully"
@@ -192,12 +230,14 @@ class MainActivity : AppCompatActivity() {
                 todo.dueDate = dueDate
                 todo.dueTime = time
                 todo.remindMe = remindMe
+                todo.remindTime = reminderTimeCategory
 
                 todoViewModel.updateTodo(todo)
 
-                if (remindMe && prevDueTime!=time) {
-                    alarmReceiver.setReminderAlarm(this, dueDate, time,"$title is due in 1 hour")
-                }
+                if (remindMe && prevDueTime!=time)
+                    setReminder(reminderTimeCategory, title, dueDate, time)
+                else if (!remindMe)
+                    alarmReceiver.cancelAlarm(this)
 
                 Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show()
             }
@@ -230,6 +270,16 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("OK") { dialogInterface, _ ->
                 dialogInterface.cancel()
             }.create().show()
+    }
+
+    private fun setReminder(timeCategory: Int, title: String, dueDate: String, dueTime: String){
+        when (timeCategory) {
+            0 -> alarmReceiver.setReminderAlarm(this, timeCategory, dueDate, dueTime,"$title is due in 1 hour")
+            1 -> alarmReceiver.setReminderAlarm(this, timeCategory, dueDate, dueTime,"$title is due in 6 hours")
+            2 -> alarmReceiver.setReminderAlarm(this, timeCategory, dueDate, dueTime,"$title is due in 12 hours")
+            3 -> alarmReceiver.setReminderAlarm(this, timeCategory, dueDate, dueTime,"$title is due tomorrow")
+            4 -> alarmReceiver.setReminderAlarm(this, timeCategory, dueDate, dueTime,"$title is due in 2 days")
+        }
     }
 
     private fun setProgressbarVisibility(state: Boolean) {

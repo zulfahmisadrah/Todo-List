@@ -1,10 +1,12 @@
 package com.zulfahmi.todolist.adapter
 
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Filter
 import android.widget.Filterable
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.zulfahmi.todolist.R
 import com.zulfahmi.todolist.activity.MainActivity
@@ -15,7 +17,7 @@ import kotlinx.android.synthetic.main.item_row_todo.view.*
 import java.text.SimpleDateFormat
 import java.util.*
 
-class TodoAdapter(private val listener: (Todo, Int) -> Unit): RecyclerView.Adapter<RecyclerView.ViewHolder>(), Filterable{
+class TodoAdapter(private val context: Context, private val listener: (Todo, Int) -> Unit): RecyclerView.Adapter<RecyclerView.ViewHolder>(), Filterable{
     private val VIEW_TYPE_EMPTY = 0
     private val VIEW_TYPE_TODO = 1
 
@@ -77,7 +79,7 @@ class TodoAdapter(private val listener: (Todo, Int) -> Unit): RecyclerView.Adapt
         when (holder.itemViewType) {
             VIEW_TYPE_EMPTY -> {
                 val emptyHolder = holder as EmptyViewHolder
-                emptyHolder.bindItem()
+                emptyHolder.bindItem(context)
             }
             VIEW_TYPE_TODO -> {
                 val todoHolder = holder as TodoViewHolder
@@ -87,13 +89,13 @@ class TodoAdapter(private val listener: (Todo, Int) -> Unit): RecyclerView.Adapt
                     else{
                         compareBy({it.dueDate}, {it.dueTime})
                     })
-                todoHolder.bindItem(sortedList[position], listener)
+                todoHolder.bindItem(context, sortedList[position], listener)
             }
         }
     }
 
     class TodoViewHolder (itemView: View): RecyclerView.ViewHolder(itemView){
-        fun bindItem(todo: Todo, listener: (Todo, Int) -> Unit) {
+        fun bindItem(context: Context, todo: Todo, listener: (Todo, Int) -> Unit) {
             val parsedDateCreated = SimpleDateFormat("dd/MM/yy", Locale.US).parse(todo.dateCreated) as Date
             val dateCreated = Commons.formatDate(parsedDateCreated, "dd MMM yyyy")
 
@@ -106,6 +108,7 @@ class TodoAdapter(private val listener: (Todo, Int) -> Unit): RecyclerView.Adapt
             val dueDate = Commons.formatDate(parsedDate, "dd MMM yyyy")
 
             val dueDateTime = "Due ${dueDate}, ${todo.dueTime}"
+            setSideIndicatorColor(context, todo.dueDate, todo.dueTime)
 
             itemView.tv_title.text = todo.title
             itemView.tv_note.text = todo.note
@@ -116,11 +119,27 @@ class TodoAdapter(private val listener: (Todo, Int) -> Unit): RecyclerView.Adapt
                 listener(todo, layoutPosition)
             }
         }
+
+        private fun setSideIndicatorColor(context: Context, dueDate: String, dueTime: String) {
+            val dueDateTime = "$dueDate $dueTime"
+            val parsedDate = SimpleDateFormat("dd/MM/yy HH:mm", Locale.US).parse(dueDateTime) as Date
+            val parsedDateNoTime = SimpleDateFormat("dd/MM/yy", Locale.US).parse(dueDateTime) as Date
+
+            val currentDate = SimpleDateFormat("dd/MM/yy HH:mm", Locale.US).format(Commons.getCurrentDateTime())
+            val parsedCurrentDate = SimpleDateFormat("dd/MM/yy HH:mm", Locale.US).parse(currentDate) as Date
+            val parsedCurrentDateNoTime = SimpleDateFormat("dd/MM/yy", Locale.US).parse(currentDate) as Date
+
+            when {
+                parsedDateNoTime == parsedCurrentDateNoTime -> itemView.side_indicator.setBackgroundColor(ContextCompat.getColor(context, R.color.colorAccent))
+                parsedDate.before(parsedCurrentDate) -> itemView.side_indicator.setBackgroundColor(ContextCompat.getColor(context, R.color.colorRed))
+                else -> itemView.side_indicator.setBackgroundColor(ContextCompat.getColor(context, R.color.colorPrimary))
+            }
+        }
     }
 
     class EmptyViewHolder (itemView: View): RecyclerView.ViewHolder(itemView){
-        fun bindItem(){
-            itemView.tv_empty.text = "No data found"
+        fun bindItem(context: Context){
+            itemView.tv_empty.text = context.resources.getString(R.string.no_data_found)
         }
     }
 }
