@@ -8,9 +8,9 @@ Simple task management and reminder app using
 
 ### Features:
 - Side indicator for task status
-  - Red -> Passed
-  - Yellow -> Today
-  - Blue -> Later
+  - Red -> Passed tasks
+  - Yellow -> Today's tasks
+  - Blue -> Later's tasks
 - Searching
 - Sorting
 - Reminder
