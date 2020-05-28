@@ -7,6 +7,10 @@ Simple task management and reminder app using
 - Material UI
 
 ### Features:
+- Side indicator for task status
+  - Red -> Passed
+  - Yellow -> Today
+  - Blue -> Later
 - Searching
 - Sorting
 - Reminder
