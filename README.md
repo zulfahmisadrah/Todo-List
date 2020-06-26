@@ -20,3 +20,7 @@ Simple task management and reminder app using
 <img src="screenshots/home.png" alt="" width=30%>
 <img src="screenshots/insert.png" alt="" width=30%>
 </p>
+
+## Download
+<img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="" width=30%>
+Download link: https://bit.ly/simtask-todolist
